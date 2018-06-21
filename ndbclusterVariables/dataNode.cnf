@@ -1,0 +1,55 @@
+[client]
+default_character_set = utf8
+port = 3306
+socket = /data/mysqlndb757/mysqld.sock
+
+[mysql_cluster]
+ndb-connectstring = 172.17.17.24
+
+[mysqld]
+log_bin_trust_function_creators = 1
+sql_mode = NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES
+max_connections = 5000
+datadir = /data/mysqlndb757
+socket = /data/mysqlndb757/mysqld.sock
+default_storage_engine = NDBCLUSTER
+pid-file = /data/mysqlndb757/mysql.pid
+ndb-connectstring = 172.17.17.24
+log_error = /data/mysqlndb757/mysql_error.log
+key_buffer_size = 32M
+join_buffer_size = 1M
+sort_buffer_size = 2M
+read_rnd_buffer_size = 1M
+max_allowed_packet = 128M
+max_connect_errors = 1000000
+wait_timeout =  28800
+interactive_timeout = 28800
+lower_case_table_names = 1
+log_bin = /data/mysqlbinlog/mysql_bin
+expire_logs_days = 7
+sync_binlog = 500
+log_slave_updates
+tmp_table_size = 32M
+max_heap_table_size = 32M
+query_cache_type = 0
+query_cache_size = 0
+max_connections = 5000
+open_files_limit = 65535
+table_definition_cache = 4096
+table_open_cache = 3000
+character_set_server = utf8
+collation_server = utf8_general_ci
+explicit_defaults_for_timestamp = true
+ndbcluster
+port = 3306
+
+# NDB CONFIG#
+ndb_cluster_connection_pool = 10
+ndbcluster = 1
+ndb_autoincrement_prefetch_sz = 1024
+ndb_join_pushdown = 1
+ndb_force_send = 1
+ndb_extra_logging  = 1
+ndb_batch_size = 32M
+ndb_use_exact_count = 1
+max_prepared_stmt_count = 65535

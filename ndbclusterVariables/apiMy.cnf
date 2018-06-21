@@ -1,0 +1,98 @@
+
+
+
+
+
+[client]
+port = 3306
+socket = /data/mysqlndb757/mysqld.sock
+
+[mysql_cluster]
+ndb-connectstring = 172.17.17.24
+
+[mysqld]
+server_id = 1
+port = 3306
+log_bin_trust_function_creators = 1
+sql_mode = NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES
+#read_only = 1    # SLAVE机器开启这个选项
+
+# GENERAL #
+user = mysql
+default-storage-engine = NDBCLUSTER
+socket = /data/mysqlndb757/mysqld.sock
+pid-file = /data/mysqlndb757/mysql.pid
+
+
+# LOGGING #
+log_output=TABLE
+datadir = /data/mysqlndb757
+#general_log_file = /data/mysqlndb757/mysql_general.log
+log_error = /data/mysqlndb757/mysql_error.log
+#slow_query_log_file = /data/mysqlndb757/mysql_slow.log
+#log_queries_not_using_indexes = 1
+slow_query_log = 1
+long_query_time = 1
+#slave_skip_errors = all
+
+# MyISAM #
+key_buffer_size = 32M
+join_buffer_size = 1M
+sort_buffer_size = 2M
+read_rnd_buffer_size = 1M					
+
+# SAFETY #
+max_allowed_packet = 16M						
+max_connect_errors = 1000000
+wait_timeout =  28800															
+interactive_timeout = 28800
+lower_case_table_names = 1
+
+# BINARY LOGGING #
+log_bin = /data/mysqlbinlog/mysql_bin
+expire_logs_days = 7
+sync_binlog = 500
+log_slave_updates
+#binlog_ignore_db = mysql,information_schema
+
+# CACHES AND LIMITS #
+tmp_table_size = 32M														 
+max_heap_table_size = 32M
+query_cache_type = 0               
+query_cache_size = 0
+max_connections = 5000
+open_files_limit = 65535
+table_definition_cache = 4096
+table_open_cache = 3000
+
+# NDB CONFIG#
+ndb_cluster_connection_pool = 10
+ndbcluster = 1 
+ndb_autoincrement_prefetch_sz = 1024
+ndb_join_pushdown = 1
+ndb_force_send = 1
+ndb_extra_logging  = 1
+ndb_batch_size = 32M
+ndb_use_exact_count = 1
+max_prepared_stmt_count = 65535
+
+# INNODB #
+#innodb_flush_method = O_DIRECT										
+#innodb_log_files_in_group = 3										
+#innodb_log_file_size = 1G						
+#innodb_log_buffer_size = 8M            # 如果Innodb_log_waits不为0可以适当增加							
+#innodb_file_per_table = 1             
+#innodb_flush_log_at_trx_commit = 2     # 1安全级别最高，性能最低（SSD除外），0性能最高，安全最低（不建议），2保证了性能和安全
+#innodb_buffer_pool_size = 180G          # 设置当前内存的60%-70%       
+#innodb_read_io_threads = 4             # 加大可增加读性能
+#innodb_write_io_threads = 4            # 加大可增加写性能
+#innodb_io_capacity = 200               # 根据磁盘iops调整，SSD可调高
+#innodb_buffer_pool_instances = 8
+
+# CHARACTER #
+character_set_server = utf8
+character_set_server = utf8
+collation_server = utf8_general_ci
+explicit_defaults_for_timestamp = true
+
+
