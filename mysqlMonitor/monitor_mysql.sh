@@ -5,9 +5,6 @@ HOSTNAME=`hostname`
 PASSWD='ane56!pda'
 
 ## WECHAT  ##
-base_url="http://alert.ane56.com/sendText"
-to_user="yangbiao,lihui,lijialin,wanglinyao,lianghongxiaong"
-url="${base_url}?to_user=${to_user}"
 
 ## SLAVE STATUS ##
 #mysql -e 'show slave status \G;' | grep 'Slave_IO_Running\|Slave_SQL_Running\|Seconds_Behind_Master' > /tmp/slave_status.txt
