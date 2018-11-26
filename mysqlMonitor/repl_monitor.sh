@@ -3,8 +3,8 @@
 ADDR="172.17.1.9 172.17.1.16 172.17.18.14 172.17.18.15 172.17.17.11 172.17.18.10"
 KDGIS="172.17.18.13"
 PORT="3306 3307 3308 3309"
-USER=dba
-PASSWORD=qwe123
+USER=
+PASSWORD=
 
 # url为告警api地址，不可修改
 to_user="yangbiao,lijialin,lianghongxiang,wanglei,taohaobo,wanglinyao"
