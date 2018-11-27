@@ -2,7 +2,7 @@
 
 HOST_IP=`ifconfig bond0 | awk "NR==2" | awk '{print $2}' | cut -d : -f 2`
 HOSTNAME=`hostname`
-PASSWD='ane56!pda'
+PASSWD=''
 
 ## WECHAT  ##
 
