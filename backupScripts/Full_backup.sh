@@ -19,7 +19,7 @@ LASTDUMP='/backup/lastdump'
 
 ## USER AND PASSWORD AND CONFIG
 uSER='root'
-PASSWORD='Ane#56!kdbill'
+PASSWORD=''
 CONFIG='/mnt/mysql5635/etc/my.cnf'
 DUMPDB='BILL'
 
