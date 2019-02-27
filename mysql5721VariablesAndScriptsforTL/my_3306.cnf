@@ -1,6 +1,6 @@
 [client]
 port = 3306
-socket = /data/ane56_3306/mysqld.sock
+socket = /data//mysqld.sock
 
 [mysqld]
 server_id = 343306
@@ -12,14 +12,14 @@ sql_mode = NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES
 # GENERAL #
 user = mysql
 default-storage-engine = InnoDB
-socket = /data/ane56_3306/mysqld.sock
-pid-file = /data/ane56_3306/mysql.pid
+socket = /data//mysqld.sock
+pid-file = /data//mysql.pid
 
 # LOGGING #
 log_output=file
-datadir = /data/ane56_3306
-#general_log_file = /data/ane56_3306/mysql_general.log
-log_error = /data/ane56_3306/mysql_error.log
+datadir = /data/
+#general_log_file = /data//mysql_general.log
+log_error = /data//mysql_error.log
 #log_queries_not_using_indexes = 1
 slow_query_log = ON
 long_query_time = 0
