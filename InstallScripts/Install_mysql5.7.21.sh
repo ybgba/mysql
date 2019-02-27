@@ -4,11 +4,11 @@ IPADDR=`ifconfig eth0 | awk '/inet addr:/ {print $2}'| awk -F '.' '{print $4}'`
 
 GROUPADD='/usr/sbin/groupadd'
 USERADD='/usr/sbin/useradd'
-ROOT='/root'
-FTPUSER='ftpuser'
-FTPPASSWORD='ftpuser'
-FTPADDR='172.17.99.62'
-FTPDIR='mysql'
+ROOT='/rootuser'
+FTPUSER='userftp'
+FTPPASSWORD='userftp'
+FTPADDR='xxx.xxx.xxx.xxx'
+FTPDIR='mysqluserftp'
 
 MYSQLGROUP='mysql'
 MYSQLUSER='mysql'
