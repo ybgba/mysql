@@ -2,25 +2,25 @@
 <!DOCTYPE mycat:schema SYSTEM "schema.dtd">
 <mycat:schema xmlns:mycat="http://io.mycat/">
 	<schema name="orderdb" checkSQLschema="false" sqlMaxLimit="50000000">
-		<table name="hs_auth_user" type="global" dataNode="dn$1-8" />
-                <table name="hs_basic_city" type="global" dataNode="dn$1-8" />
-                <table name="hs_basic_country" type="global" dataNode="dn$1-8" />
-                <table name="hs_basic_county" type="global" dataNode="dn$1-8" />
-                <table name="hs_basic_customer" type="global" dataNode="dn$1-8" />
-                <table name="hs_basic_customer_address" type="global" dataNode="dn$1-8" />
-                <table name="hs_basic_dict" type="global" dataNode="dn$1-8" />
-                <table name="hs_basic_dis_range" type="global" dataNode="dn$1-8" />
-                <table name="hs_basic_employee" type="global" dataNode="dn$1-8" />
-                <table name="hs_basic_global_config" type="global" dataNode="dn$1-8" />
-                <table name="hs_basic_province" type="global" dataNode="dn$1-8" />
-                <table name="hs_basic_site" type="global" dataNode="dn$1-8" />
-                <table name="hs_basic_site_detail" type="global" dataNode="dn$1-8" />
-                <table name="hs_ord_items" dataNode="dn$1-8" rule="sharding-by-murmur-items" />
-                <table name="hs_ord_order" dataNode="dn$1-8" rule="sharding-by-murmur-order" />               
-                <table name="hs_ord_paintmarker" dataNode="dn$1-8" rule="sharding-by-murmur-paintmarker" />               
-                <table name="hs_ord_record" dataNode="dn$1-8" rule="sharding-by-murmur-record" />               
-                <table name="hs_ord_index_orderno" dataNode="dn$1-8" rule="sharding-by-murmur-index-orderno" />               
-                <table name="hs_ord_index_ewbno" dataNode="dn$1-8" rule="sharding-by-murmur-index-ewbno" />               
+		<table name="test1" type="global" dataNode="dn$1-8" />
+                <table name="test1" type="global" dataNode="dn$1-8" />
+                <table name="test1" type="global" dataNode="dn$1-8" />
+                <table name="test1" type="global" dataNode="dn$1-8" />
+                <table name="test1" type="global" dataNode="dn$1-8" />
+                <table name="test1" type="global" dataNode="dn$1-8" />
+                <table name="test1" type="global" dataNode="dn$1-8" />
+                <table name="test1" type="global" dataNode="dn$1-8" />
+                <table name="test1" type="global" dataNode="dn$1-8" />
+                <table name="test1" type="global" dataNode="dn$1-8" />
+                <table name="test1" type="global" dataNode="dn$1-8" />
+                <table name="test1" type="global" dataNode="dn$1-8" />
+                <table name="test1" type="global" dataNode="dn$1-8" />
+                <table name="test1" dataNode="dn$1-8" rule="sharding-by-murmur-items" />
+                <table name="test1" dataNode="dn$1-8" rule="sharding-by-murmur-order" />               
+                <table name="test1" dataNode="dn$1-8" rule="sharding-by-murmur-paintmarker" />               
+                <table name="test1" dataNode="dn$1-8" rule="sharding-by-murmur-record" />               
+                <table name="test1" dataNode="dn$1-8" rule="sharding-by-murmur-index-orderno" />               
+                <table name="test1" dataNode="dn$1-8" rule="sharding-by-murmur-index-ewbno" />               
 	</schema>
 
         <dataNode name="dn1" dataHost="shard1" database="orderdb" />
@@ -34,73 +34,73 @@
 
         <dataHost name="shard1" maxCon="2000" minCon="1" balance="1" writeType="0" dbType="mysql" dbDriver="native" switchType="2" slaveThreshold="100">
            <heartbeat>show slave status</heartbeat>
-           <writeHost host="DN1WM01" url="172.17.17.34:3306" user="mycat" password="123456">
-           	<readHost host="DN1RS01" url="172.17.17.35:3307" user="mycat" password="123456" />
+           <writeHost host="DN1WM01" url="192.168.17.34:3306" user="mycat" password="123456">
+           	<readHost host="DN1RS01" url="192.168.17.35:3307" user="mycat" password="123456" />
            </writeHost>
-           <writeHost host="DN1WM02" url="172.17.17.35:3307" user="mycat" password="123456">
+           <writeHost host="DN1WM02" url="192.168.17.35:3307" user="mycat" password="123456">
 	   </writeHost>
         </dataHost>
 
         <dataHost name="shard2" maxCon="2000" minCon="1" balance="1" writeType="0" dbType="mysql" dbDriver="native" switchType="2" slaveThreshold="100">
            <heartbeat>show slave status</heartbeat>
-           <writeHost host="DN2WM01" url="172.17.17.35:3306" user="mycat" password="123456">
-                <readHost host="DN2RS01" url="172.17.17.36:3307" user="mycat" password="123456" />
+           <writeHost host="DN2WM01" url="192.168.17.35:3306" user="mycat" password="123456">
+                <readHost host="DN2RS01" url="192.168.17.36:3307" user="mycat" password="123456" />
            </writeHost>
-           <writeHost host="DN2WM02" url="172.17.17.36:3307" user="mycat" password="123456">
+           <writeHost host="DN2WM02" url="192.168.17.36:3307" user="mycat" password="123456">
            </writeHost>
         </dataHost>
 
         <dataHost name="shard3" maxCon="2000" minCon="1" balance="1" writeType="0" dbType="mysql" dbDriver="native" switchType="2" slaveThreshold="100">
            <heartbeat>show slave status</heartbeat>
-           <writeHost host="DN3WM01" url="172.17.17.36:3306" user="mycat" password="123456">
-                <readHost host="DN3RS01" url="172.17.17.37:3307" user="mycat" password="123456" />
+           <writeHost host="DN3WM01" url="192.168.17.36:3306" user="mycat" password="123456">
+                <readHost host="DN3RS01" url="192.168.17.37:3307" user="mycat" password="123456" />
            </writeHost>
-           <writeHost host="DN3WM02" url="172.17.17.37:3307" user="mycat" password="123456">
+           <writeHost host="DN3WM02" url="192.168.17.37:3307" user="mycat" password="123456">
            </writeHost>
         </dataHost>
 
         <dataHost name="shard4" maxCon="2000" minCon="1" balance="1" writeType="0" dbType="mysql" dbDriver="native" switchType="2" slaveThreshold="100">
            <heartbeat>show slave status</heartbeat>
-           <writeHost host="DN4WM01" url="172.17.17.37:3306" user="mycat" password="123456">
-                <readHost host="DN4RS01" url="172.17.17.38:3307" user="mycat" password="123456" />
+           <writeHost host="DN4WM01" url="192.168.17.37:3306" user="mycat" password="123456">
+                <readHost host="DN4RS01" url="192.168.17.38:3307" user="mycat" password="123456" />
            </writeHost>
-           <writeHost host="DN4WM02" url="172.17.17.38:3307" user="mycat" password="123456">
+           <writeHost host="DN4WM02" url="192.168.17.38:3307" user="mycat" password="123456">
            </writeHost>
         </dataHost>
 
         <dataHost name="shard5" maxCon="2000" minCon="1" balance="1" writeType="0" dbType="mysql" dbDriver="native" switchType="2" slaveThreshold="100">
            <heartbeat>show slave status</heartbeat>
-           <writeHost host="DN5WM01" url="172.17.17.38:3306" user="mycat" password="123456">
-                <readHost host="DN5RS01" url="172.17.17.39:3307" user="mycat" password="123456" />
+           <writeHost host="DN5WM01" url="192.168.17.38:3306" user="mycat" password="123456">
+                <readHost host="DN5RS01" url="192.168.17.39:3307" user="mycat" password="123456" />
            </writeHost>
-           <writeHost host="DN5WM02" url="172.17.17.39:3307" user="mycat" password="123456">
+           <writeHost host="DN5WM02" url="192.168.17.39:3307" user="mycat" password="123456">
            </writeHost>
         </dataHost>
 
         <dataHost name="shard6" maxCon="2000" minCon="1" balance="1" writeType="0" dbType="mysql" dbDriver="native" switchType="2" slaveThreshold="100">
            <heartbeat>show slave status</heartbeat>
-           <writeHost host="DN6WM01" url="172.17.17.39:3306" user="mycat" password="123456">
-                <readHost host="DN6RS01" url="172.17.17.40:3307" user="mycat" password="123456" />
+           <writeHost host="DN6WM01" url="192.168.17.39:3306" user="mycat" password="123456">
+                <readHost host="DN6RS01" url="192.168.17.40:3307" user="mycat" password="123456" />
            </writeHost>
-           <writeHost host="DN6WM02" url="172.17.17.40:3307" user="mycat" password="123456">
+           <writeHost host="DN6WM02" url="192.168.17.40:3307" user="mycat" password="123456">
            </writeHost>
         </dataHost>
 
         <dataHost name="shard7" maxCon="2000" minCon="1" balance="1" writeType="0" dbType="mysql" dbDriver="native" switchType="2" slaveThreshold="100">
            <heartbeat>show slave status</heartbeat>
-           <writeHost host="DN7WM01" url="172.17.17.40:3306" user="mycat" password="123456">
-                <readHost host="DN7RS01" url="172.17.17.41:3307" user="mycat" password="123456" />
+           <writeHost host="DN7WM01" url="192.168.17.40:3306" user="mycat" password="123456">
+                <readHost host="DN7RS01" url="168.17.17.41:3307" user="mycat" password="123456" />
            </writeHost>
-           <writeHost host="DN7WM02" url="172.17.17.41:3307" user="mycat" password="123456">
+           <writeHost host="DN7WM02" url="192.168.17.41:3307" user="mycat" password="123456">
            </writeHost>
         </dataHost>
 
         <dataHost name="shard8" maxCon="2000" minCon="1" balance="1" writeType="0" dbType="mysql" dbDriver="native" switchType="2" slaveThreshold="100">
            <heartbeat>show slave status</heartbeat>
-           <writeHost host="DN8WM01" url="172.17.17.41:3306" user="mycat" password="123456">
-                <readHost host="DN8RS01" url="172.17.17.42:3307" user="mycat" password="123456" />
+           <writeHost host="DN8WM01" url="192.168.17.41:3306" user="mycat" password="123456">
+                <readHost host="DN8RS01" url="192.168.17.42:3307" user="mycat" password="123456" />
            </writeHost>
-           <writeHost host="DN8WM02" url="172.17.17.42:3307" user="mycat" password="123456">
+           <writeHost host="DN8WM02" url="192.168.17.42:3307" user="mycat" password="123456">
            </writeHost>
         </dataHost>
 
