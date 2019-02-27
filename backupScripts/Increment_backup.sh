@@ -17,10 +17,10 @@ FILEDIR='/backup/file'
 LOGDIR='/backup/logs'
 
 ## USER AND PASSWORD AND CONFIG
-uSER='root'
+uSER='test'
 PASSWORD=''
-CONFIG='/mnt/mysql5635/etc/my.cnf'
-DUMPDB='BILL'
+CONFIG='/mnt/mysql/etc/my.cnf'
+DUMPDB='test'
 
 ## THE PARAMETER OF INNOBACKUPEX
 PARAMETER='--no-timestamp --incremental --slave-info --safe-slave-backup'
