@@ -1,0 +1,8 @@
+DELIMITER $$
+
+ALTER EVENT `daily_generate_partition` ON SCHEDULE EVERY 1 HOUR STARTS '2019-01-07 10:40:00' ON COMPLETION PRESERVE ENABLE COMMENT 'Creating partitions' DO BEGIN
+    
+    CALL create_partition_by_day('db','table');
+END$$
+
+DELIMITER ;
