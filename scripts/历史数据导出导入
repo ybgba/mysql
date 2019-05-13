@@ -1,0 +1,95 @@
+#!/bin/bash
+
+CURRENTDATE=`date +%Y-%m-%d`
+YESTERDAY=`date +%Y-%m-%d -d "-1 days"`
+TIME=' 00:00:00'
+
+SCRIPTDIR='/app/data/backup/msg'
+RECEIVERNAME=$SCRIPTDIR/'receiver'`date +%Y%m%d`'.sql'
+YUNOSNAME=$SCRIPTDIR/'yunos'`date +%Y%m%d`'.sql'
+
+TARGETHOST='10.129.24.134'
+TARGETPORT=4841
+
+mysqldump -h10.129.48.202 --set-gtid-purged=OFF -uroot -proot -t db_msg tb_message_receiver --where="create_date >= '$YESTERDAY$TIME' and create_date < '$CURRENTDATE$TIME'" > $RECEIVERNAME
+if [ $? -eq 0 ]; then 
+        sed -i "s/tb_message_receiver/tb_message_receiver_`date -d yesterday +%Y%m%d`/g" $RECEIVERNAME
+fi
+
+mysqldump -h10.129.48.202 --set-gtid-purged=OFF -uroot -proot -t db_msg tb_message_yunos --where="create_date >= '$YESTERDAY$TIME' and create_date < '$CURRENTDATE$TIME'" > $YUNOSNAME
+if [ $? -eq 0 ]; then
+        sed -i "s/tb_message_yunos/tb_message_yunos_`date -d yesterday +%Y%m%d`/g" $YUNOSNAME
+fi
+
+mysql -h$TARGETHOST -P$TARGETPORT -ubanmamsguser -pPass1q2w db_msg -e"drop table if exists tb_message_yunos_`date -d yesterday +%Y%m%d`;"
+if [ $? -eq 0 ]; then
+        mysql -h$TARGETHOST -P$TARGETPORT -ubanmamsguser -pPass1q2w db_msg -e" \
+        CREATE TABLE tb_message_yunos_`date -d yesterday +%Y%m%d` ( \
+        ID bigint(20) NOT NULL AUTO_INCREMENT COMMENT '编号', \
+        SEND_WAY char(1) DEFAULT NULL COMMENT '1=群发，2=单发', \
+        SHOW_TYPE char(1) DEFAULT NULL COMMENT '显示方式 1:通知中心 6:后台，仅云os', \
+        MSG_TOPIC_CODE varchar(255) DEFAULT NULL COMMENT '主题code', \
+        MESSAGE_TITLE varchar(255) DEFAULT NULL COMMENT '消息标题', \
+        MESSAGE_CONTENT varchar(1000) DEFAULT NULL COMMENT '消息内容', \
+        PARAMETER varchar(1000) DEFAULT NULL COMMENT '消息参数,json字符串格式', \
+        ICO varchar(255) DEFAULT NULL COMMENT '消息图标，仅云OS消息', \
+        URI varchar(500) DEFAULT NULL COMMENT 'yunos4.0专用,限制消息只有指定应用来侦听', \
+        MSG_EXPIRES varchar(50) DEFAULT NULL COMMENT '消息过期时间，单位为秒', \
+        PROGRAME varchar(255) DEFAULT NULL COMMENT '为action或广播侦听通道，要求填写应用包名(package)，仅云os', \
+        RESPONSETYPE char(1) DEFAULT NULL COMMENT '响应方式 0:无响应 4:打开应用 7:发送广播，仅云os', \
+        REST_MSG_ID varchar(255) DEFAULT NULL COMMENT '发送返回消息ID', \
+        SEND_BY varchar(50) DEFAULT NULL COMMENT '消息发送人', \
+        ERROR_MSG varchar(255) DEFAULT NULL COMMENT '错误描述', \
+        ERROR_CODE varchar(50) DEFAULT NULL COMMENT '错误编码', \
+        SUB_ERROR_CODE varchar(50) DEFAULT NULL COMMENT '子错误编码', \
+        SUB_ERROR_MSG varchar(255) DEFAULT NULL COMMENT '子错误描述', \
+        TAG_NAME varchar(255) DEFAULT NULL COMMENT '标签名称', \
+        REQID varchar(255) DEFAULT NULL COMMENT 'REQUEST ID', \
+        DEVICE_TYPE varchar(50) DEFAULT NULL COMMENT '设备类型：android、ios、yunosmp、yunosavn', \
+        DEPLOY_STATUS char(1) DEFAULT NULL COMMENT '仅IOS应用推送时使用，默认值为0，开发环境为1，生产环境为0', \
+        DESCRIPTION varchar(255) DEFAULT NULL COMMENT '描述', \
+        STATUS tinyint(1) DEFAULT NULL COMMENT '状态;  0: 未发送; 1: 已发送;2:取消发送;3：已删除', \
+        MSG_CAT varchar(50) DEFAULT NULL COMMENT '业务消息类别', \
+        IS_READ tinyint(1) DEFAULT '0' COMMENT '未读 0 已读 1', \
+        CREATE_DATE timestamp NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '创建日期', \
+        CREATE_BY bigint(20) DEFAULT NULL COMMENT '创建人', \
+        LAST_UPDATE_DATE timestamp NULL DEFAULT NULL COMMENT '更新日期', \
+        LAST_UPDATE_BY bigint(20) DEFAULT NULL COMMENT '更新人', \
+        IS_VALID tinyint(1) DEFAULT NULL COMMENT '是否有效', \
+        ROW_VERSION tinyint(11) DEFAULT NULL COMMENT '版本号', \
+        BATCHNO varchar(10) DEFAULT NULL COMMENT '群发批次', \
+        PRIMARY KEY (ID), \
+        KEY msg_create_date_idx (CREATE_DATE), \
+        KEY index_name (MSG_CAT)  \
+        )ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='消息表';" 
+        mysql -h$TARGETHOST -P$TARGETPORT -ubanmamsguser -pPass1q2w db_msg -e"source $YUNOSNAME"
+fi
+
+mysql -h$TARGETHOST -P$TARGETPORT -ubanmamsguser -pPass1q2w db_msg -e"drop table if exists tb_message_receiver_`date -d yesterday +%Y%m%d`;"
+if [ $? -eq 0 ]; then
+        mysql -h$TARGETHOST -P$TARGETPORT -ubanmamsguser -pPass1q2w db_msg -e" \
+        CREATE TABLE tb_message_receiver_`date -d yesterday +%Y%m%d` ( \
+          ID bigint(20) NOT NULL AUTO_INCREMENT COMMENT '编号', \
+          MSG_ID bigint(20) DEFAULT NULL COMMENT 'yunos或者androidios主键', \
+          USER_ID bigint(20) DEFAULT NULL COMMENT '用户编号', \
+          VIN_CODE varchar(255) DEFAULT NULL COMMENT 'VIN码', \
+          DEVICE_CODE varchar(255) DEFAULT NULL COMMENT '设备号', \
+          DT_SRC varchar(20) DEFAULT NULL COMMENT 'yunos，baidu', \
+          DESCRIPTION varchar(255) DEFAULT NULL COMMENT '描述', \
+          STATUS tinyint(1) DEFAULT NULL COMMENT '状态;  0: 未接收; 1: 已接收;', \
+          CREATE_DATE timestamp NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '创建日期', \
+          CREATE_BY bigint(20) DEFAULT NULL COMMENT '创建人', \
+          LAST_UPDATE_DATE timestamp NULL DEFAULT NULL COMMENT '更新日期', \
+          LAST_UPDATE_BY bigint(20) DEFAULT NULL COMMENT '更新人', \
+          IS_VALID tinyint(1) DEFAULT NULL COMMENT '是否有效', \
+          ROW_VERSION tinyint(11) DEFAULT NULL COMMENT '版本号', \
+          DEVICE_TYPE varchar(50) DEFAULT NULL COMMENT '设备类型：androidmp、iosmp、yunosmp、yunosavn', \
+          DEPLOY_STATUS char(10) DEFAULT NULL COMMENT '仅IOS应用推送时使用，默认值为0，开发环境为1，生产环境为0', \
+          IS_READ tinyint(1) DEFAULT '1', \
+          PRIMARY KEY (ID,CREATE_DATE), \
+          KEY msg_receive_msgid_idx (MSG_ID), \
+          KEY idx_vin_code (VIN_CODE), \
+          KEY index_name (USER_ID) \
+        ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='消息接收者';"
+        mysql -h$TARGETHOST -P$TARGETPORT -ubanmamsguser -pPass1q2w db_msg -e"source $RECEIVERNAME"
+fi
