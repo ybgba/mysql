@@ -1,0 +1,52 @@
+DELIMITER $$
+
+USE `data_report`$$
+
+DROP PROCEDURE IF EXISTS `test1`$$
+
+CREATE DEFINER=`dba`@`%` PROCEDURE `test1`(IN siteid INT)
+BEGIN
+	DROP TEMPORARY TABLE IF EXISTS tmp_site;
+	CREATE TEMPORARY TABLE tmp_site (
+		site_id INT
+	);
+	DELETE FROM tmp_site;
+	CALL test(siteid);
+	SELECT site_id FROM tmp_site;
+    END$$
+
+DELIMITER ;
+
+
+DELIMITER $$
+
+USE `data_report`$$
+
+DROP PROCEDURE IF EXISTS `test2`$$
+
+CREATE DEFINER=`dba`@`%` PROCEDURE `test2`(IN siteid INT)
+BEGIN
+	DECLARE i INT;
+	SET i = 1;
+	
+	DROP TABLE IF EXISTS tmp_siteid; 
+	DROP TABLE IF EXISTS tmp_pid;
+	
+	CREATE TEMPORARY TABLE tmp_siteid (site_id INT,parent_id INT, ii INT);
+	CREATE TEMPORARY TABLE tmp_pid (p_id INT);	
+	
+	INSERT INTO tmp_pid SELECT parent_site_id FROM hs_basic_site WHERE parent_site_id > 0 AND site_id = siteid;
+	INSERT INTO tmp_siteid SELECT hs.site_id,hs.parent_site_id,i FROM hs_basic_site hs JOIN tmp_pid tp ON hs.site_id = tp.p_id;
+	WHILE EXISTS(SELECT 1 FROM tmp_pid) DO
+		TRUNCATE tmp_pid;
+		SET i = i + 1;
+		INSERT INTO tmp_pid SELECT hs.site_id FROM hs_basic_site hs JOIN tmp_siteid ts ON hs.site_id = ts.parent_id AND ts.ii = i - 1;
+		INSERT INTO tmp_siteid SELECT hs.site_id,hs.parent_site_id,i FROM hs_basic_site hs JOIN tmp_pid tp ON hs.site_id = tp.p_id;
+	END WHILE;
+	INSERT INTO tmp_siteid (site_id) VALUES (siteid);
+	SELECT site_id FROM tmp_siteid;
+	
+    END$$
+
+DELIMITER ;
+
