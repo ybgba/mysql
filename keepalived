@@ -1,0 +1,329 @@
+	dpkg-reconfigure mysql-apt-config
+	apt-get autoremove mysql-server 
+	apt-get autoremove mysql-common
+	apt-get autoremove mysql-client-core-5.5 
+	 
+	dpkg -l |grep ^rc|awk '{print $2}' |sudo xargs dpkg -P
+apt-get purge  mysql-server-core-5.5
+
+wget http://dev.mysql.com/get/mysql-apt-config_0.6.0-1_all.deb
+	dpkg -i mysql-apt-config_0.6.0-1_all.deb
+#	dpkg-reconfigure mysql-apt-config
+	apt-get update
+apt-get install mysql-server	
+apt-get install php5-mysql
+apt-get install php5-redis
+apt-get install mysql-client
+mysql_upgrade
+
+
+wget http://dev.mysql.com/get/Downloads/MySQL-5.7/mysql-server_5.7.10-1ubuntu14.04_amd64.deb-bundle.tar
+chmod 755 mysql-server_5.7.10-1ubuntu14.04_amd64.deb-bundle.tar
+tar xvf mysql-server_5.7.10-1ubuntu14.04_amd64.deb-bundle.tar
+apt-get install libmecab2
+1.png  2.png  3.png  4.png
+dpkg -i *.deb
+-- check
+dpkg -l | grep mysql
+ps -ef | grep mysql
+mkdir /var/lib/mysql/data
+chown mysql:mysql -R /var/lib/mysql/data
+-- mysqld --initialize --user=mysql --config=/etc/mysql/my.cnf
+
+
+###########################################################################
+1.mysql主主复制
+master:192.168.40.238
+master:192.168.40.239
+VIP:192.168.40.236
+slave:192.168.70.248   >>>>>> replication 192.168.40.236
+
+a) 安装mysql（版本确定为5.5）
+## CENTOS ##
+## 由于直接yum安装的是5.1版本，需要下载一个repo ##
+wget http://dev.mysql.com/get/mysql57-community-release-el6-7.noarch.rpm
+rpm -ivh http://dev.mysql.com/get/mysql57-community-release-el6-7.noarch.rpm
+
+vim /etc/yum.repos.d/mysql-community.repo   -- 默认是安装5.7版本，所以需要修改成安装5.5版本
+## 修改以下 ##
+# Enable to use MySQL 5.5
+[mysql55-community]
+name=MySQL 5.5 Community Server
+baseurl=http://repo.mysql.com/yum/mysql-5.5-community/el/6/$basearch/
+enabled=1               -- 这里改成1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-mysql
+
+#[mysql57-community]
+name=MySQL 5.7 Community Server
+baseurl=http://repo.mysql.com/yum/mysql-5.7-community/el/6/$basearch/
+enabled=0                -- 这里改成0
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-mysql
+
+## 安装mysql ##
+yum install mysql-server -y
+
+## ubuntu ##
+sudo apt-get mysql-server
+
+##  注意 ： 安装完成后先修改一下datadir ###
+datadir=/var/lib/mysql/data
+### 下面这行注释掉 ###
+#bind-address           = 127.0.0.1
+
+b) 配置文件 my.cnf （replication相关配置）：
+## 192.168.40.238 ##
+server-id               = 2
+relay_log = mysql-relay-bin
+log_slave_updates
+replicate-ignore-db=mysql
+replicate_wild_do_table=yiqiding.%
+replicate_wild_do_table=yiqiding_ktv.%
+replicate_wild_do_table = yiqiding_info.%
+auto_increment_increment = 2
+auto_increment_offset = 1
+log-bin=mysql-bin
+binlog_format=mixed
+sync_binlog = 1
+expire_logs_days=5
+binlog-ignore-db = information_schema
+expire_logs_days        = 7
+
+## 192.168.40.239 ##
+server-id               = 3
+relay_log = mysql-relay-bin
+log_slave_updates
+replicate-ignore-db=mysql
+replicate_wild_do_table=yiqiding.%
+replicate_wild_do_table=yiqiding_ktv.%
+replicate_wild_do_table = yiqiding_info.%
+auto_increment_increment = 2
+auto_increment_offset = 2
+log-bin=mysql-bin
+binlog_format=mixed
+sync_binlog = 1
+expire_logs_days=5
+binlog-ignore-db = information_schema
+expire_logs_days       = 7
+
+c) 导入所需要的数据（两台机器全部导入）
+## sql脚本导入或者dump文件导入都可以 ##
+## 两台机器全部导入是为了确保起始点是一致的 ##
+
+d) replication设置
+##  创建replication用户 ##
+##  在238机器上执行 ##
+grant replication slave on *.* to repl@'192.168.40.239' identified by 'qwe123'  -- 创建replication用户和密码，从239机器进行访问
+##  在239机器上执行 ##
+grant replication slave on *.* to repl@'192.168.40.238' identified by 'qwe123'  -- 创建replication用户和密码，从238机器进行访问
+
+## 在两台机器上执行 ##
+show master status;         -- 查看当前binlog文件以及point
+
+##  在238机器上执行 ##
+CHANGE MASTER TO
+MASTER_HOST='192.168.40.239',
+MASTER_PORT=3306,
+MASTER_USER='repl',
+MASTER_PASSWORD='qwe123',
+MASTER_LOG_FILE='mysql-bin.000001',
+MASTER_LOG_POS=63129104;
+##  在239机器上执行 ##
+CHANGE MASTER TO
+MASTER_HOST='192.168.40.238',
+MASTER_PORT=3306,
+MASTER_USER='repl',
+MASTER_PASSWORD='qwe123',
+MASTER_LOG_FILE='mysql-bin.000001',
+MASTER_LOG_POS=63129104;
+
+## 在2台机器上检查replication是否正常 ##
+show slave status\G;
+             Slave_IO_Running: Yes
+            Slave_SQL_Running: Yes
+
+
+2.安装keepalived
+a) 安装
+## ubuntu ##
+sudo apt-get install libssl-dev
+sudo apt-get install openssl
+sudo apt-get install libpopt-dev
+sudo apt-get ipvsadm
+
+## centos ##
+yum install keepalived -y
+yum install ipvsadm -y
+
+## 编写kill脚本 ##
+vim /opt/check_keepalived.sh 
+
+#!/bin/sh 
+
+sudo pkill keepalived
+
+
+b) 修改配置文件
+## 192.168.40.238 ##
+vim /etc/keepalived/keepalived.conf
+! Configuration File for keepalived
+
+global_defs {
+   notification_email {
+     yangbiao@luoha.com
+   }
+   notification_email_from Alexandre.Cassen@firewall.loc
+   smtp_server 127.0.0.1
+   smtp_connect_timeout 30
+   router_id LVS_DEVEL
+}
+
+vrrp_instance VI_1 {
+    state MASTER 
+    interface eth0
+    virtual_router_id 51
+    priority 100
+    nopreempt         
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass 1111
+    }
+    virtual_ipaddress {
+        192.168.40.236
+    }
+}
+
+virtual_server 192.168.40.236 3306 {
+    delay_loop 2
+    lb_algo wrr
+    lb_kind DR
+    nat_mask 255.255.255.0
+    persistence_timeout 50
+    protocol TCP
+
+    real_server 192.168.40.238 3306 {
+        weight 1
+	notify_down /opt/check_keepalived.sh
+            TCP_CHECK {
+	    connect_timeout 3
+            nb_get_retry 3
+            delay_before_retry 3
+	    connect_port 3306
+        }
+    }
+}
+
+
+
+## 192.168.40.239 ##
+vim /etc/keepalived/keepalived.conf
+! Configuration File for keepalived
+
+global_defs {
+   notification_email {
+     yangbiao@luoha.com
+   }
+   notification_email_from Alexandre.Cassen@firewall.loc
+   smtp_server 127.0.0.1
+   smtp_connect_timeout 30
+   router_id LVS_DEVEL
+}
+
+vrrp_instance VI_1 {
+    state MASTER
+    interface eth0
+    virtual_router_id 51
+    priority 90
+    nopreempt         
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass 1111
+    }
+    virtual_ipaddress {
+        192.168.40.236
+    }
+}
+
+virtual_server 192.168.40.236 3306 {
+    delay_loop 2
+    lb_algo wrr
+    lb_kind DR
+    nat_mask 255.255.255.0
+    persistence_timeout 50
+    protocol TCP
+
+    real_server 192.168.40.239 3306 {
+        weight 1
+	notify_down /opt/check_keepalived.sh
+            TCP_CHECK {
+	    connect_timeout 3
+            nb_get_retry 3
+            delay_before_retry 3
+	    connect_port 3306
+        }
+    }
+}
+
+c) 启动
+## 在两台机器上运行  ##
+service keepalived start
+
+d) 检查
+## 在238机器上执行，因为这个是master，所以可以看到虚拟IP ##
+ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default 
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether fc:aa:14:ec:81:bd brd ff:ff:ff:ff:ff:ff
+    inet 192.168.40.238/24 brd 192.168.40.255 scope global eth0
+       valid_lft forever preferred_lft forever
+    inet 192.168.40.236/32 scope global eth0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::feaa:14ff:feec:81bd/64 scope link 
+       valid_lft forever preferred_lft forever
+
+ipvsadm -Ln           -- 这个命令是看机器是否已经挂上VIP
+IP Virtual Server version 1.2.1 (size=4096)
+Prot LocalAddress:Port Scheduler Flags
+  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
+TCP  192.168.40.236:3306 wrr persistent 50
+  -> 192.168.40.238:3306          Route   1      0          0         
+TCP  192.168.40.237:3306 wrr persistent 50
+	   
+## 在239机器上执行，slave看不到 ##
+ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default 
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether fc:aa:14:39:01:e6 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.40.239/24 brd 192.168.40.255 scope global eth0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::feaa:14ff:fe39:1e6/64 scope link 
+       valid_lft forever preferred_lft forever
+
+ipvsadm -Ln     -- 这个命令是看机器是否已经挂上VIP
+IP Virtual Server version 1.2.1 (size=4096)
+Prot LocalAddress:Port Scheduler Flags
+  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
+TCP  192.168.40.236:3306 wrr persistent 50
+  -> 192.168.40.239:3306          Route   1      0          0         
+TCP  192.168.40.237:3306 wrr persistent 50	   
+
+e) 测试
+## 关闭238的mysql ##
+###检查vip是否漂移到239上###
+
+###连接到vip的客户端会有3-5秒连接不到数据库###
+
+##  ##
