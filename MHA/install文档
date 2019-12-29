@@ -1,0 +1,251 @@
+db1,db2:
+grant replication slave on *.* to repl@'172.168.101.%' identified by 'qwe123';
+db2,db3:
+CHANGE MASTER TO
+MASTER_HOST='172.168.101.191',
+MASTER_PORT=3306,
+MASTER_USER='repl',
+MASTER_PASSWORD='qwe123',
+MASTER_LOG_FILE='mysql_bin.000013',
+MASTER_LOG_POS=120;
+
+CHANGE MASTER TO
+MASTER_HOST='172.168.101.195',
+MASTER_PORT=3306,
+MASTER_USER='repl',
+MASTER_PASSWORD='qwe123',
+MASTER_LOG_FILE='mysql_bin.000007',
+MASTER_LOG_POS=120;
+
+select TABLE_SCHEMA,sum(TABLE_ROWS),sum(DATA_LENGTH)/1024/1024,sum(INDEX_LENGTH)/1024/1024,(sum(DATA_LENGTH)+sum(INDEX_LENGTH)) as length from tables where TABLE_SCHEMA not in ('mysql','performance_schema','information_schema') group by TABLE_SCHEMA order by sum(DATA_LENGTH) desc;
+ 
+MANAGER NODE: 172.168.101.194 
+NODE 1 MASTER: 172.17.101.191
+NODE 2 STANDBY: 172.17.101.195
+NODE 3 SLAVE: 172.17.101.193
+
+-- 安装包
+mha4mysql-manager-0.56.tar.gz
+mha4mysql-node-0.56.tar.gz
+
+-- node 1 2 3
+yum install perl-DBD-MySQL perl-CPAN -y   
+
+-- 1, 2 ,3 node
+tar zxvf mha4mysql-node-0.56.tar.gz
+cd mha4mysql-node-0.56
+perl Makefile.PL
+make && make install
+
+-- manager node
+tar zxvf mha4mysql-node-0.56.tar.gz
+cd mha4mysql-node-0.56
+perl Makefile.PL
+make && make install
+
+perl -MCPAN -e "install Parallel::ForkManager"
+
+perl -MCPAN -e "install Log::Dispatch"
+or
+yum install perl-DBD-MySQL perl-CPAN perl-Config-Tiny perl-Log-Dispatch perl-Parallel-ForkManager perl-Time-HiRes -y
+wget http://dl.fedoraproject.org/pub/epel/6/x86_64//perl-Mail-Sender-0.8.16-3.el6.noarch.rpm
+wget http://dl.fedoraproject.org/pub/epel/6/x86_64//perl-Mail-Sendmail-0.79-12.el6.noarch.rpm
+wget http://dl.fedoraproject.org/pub/epel/6/i386//perl-Log-Dispatch-2.27-1.el6.noarch.rpm
+yum install -y perl-Mail-Sender-0.8.16-3.el6.noarch.rpm
+yum install -y perl-Mail-Sendmail-0.79-12.el6.noarch.rpm
+yum install -y perl-Log-Dispatch-2.27-1.el6.noarch.rpm
+
+tar zxvf mha4mysql-manager-0.56.tar.gz
+cd mha4mysql-manager-0.56
+perl Makefile.PL
+
+
+# 创建mha监控用户 所有db #
+grant all on *.* to mha_monitor@'172.168.101.%' identified by 'mha_monitor';
+
+####################以下提示就说明安装成功###########################
+[root@db004 mha4mysql-manager-0.56]# perl Makefile.PL 
+*** Module::AutoInstall version 1.03
+*** Checking for Perl dependencies...
+[Core Features]
+- DBI                   ...loaded. (1.609)
+- DBD::mysql            ...loaded. (4.013)
+- Time::HiRes           ...loaded. (1.9721)
+- Config::Tiny          ...loaded. (2.12)
+- Log::Dispatch         ...loaded. (2.26)
+- Parallel::ForkManager ...loaded. (1.19)
+- MHA::NodeConst        ...loaded. (0.56)
+*** Module::AutoInstall configuration finished.
+Writing Makefile for mha4mysql::manager
+#################################################
+
+-- node机器 /usr/local/bin/  自动调用
+save_binary_logs               //保存和复制master的二进制日志
+apply_diff_relay_logs          //识别差异的中继日志事件并将其差异的事件应用于其他的slave
+filter_mysqlbinlog             //去除不必要的ROLLBACK事件（MHA已不再使用这个工具）
+purge_relay_logs               //清除中继日志（不会阻塞SQL线程）
+
+-- manager机器 /usr/local/bin/
+-r-xr-xr-x 1 root root 16367 Mar  4 17:27 apply_diff_relay_logs
+-r-xr-xr-x 1 root root  4807 Mar  4 17:27 filter_mysqlbinlog
+-r-xr-xr-x 1 root root  1995 Mar  4 17:36 masterha_check_repl
+-r-xr-xr-x 1 root root  1779 Mar  4 17:36 masterha_check_ssh
+-r-xr-xr-x 1 root root  1865 Mar  4 17:36 masterha_check_status
+-r-xr-xr-x 1 root root  3201 Mar  4 17:36 masterha_conf_host
+-r-xr-xr-x 1 root root  2517 Mar  4 17:36 masterha_manager
+-r-xr-xr-x 1 root root  2165 Mar  4 17:36 masterha_master_monitor
+-r-xr-xr-x 1 root root  2373 Mar  4 17:36 masterha_master_switch
+-r-xr-xr-x 1 root root  5171 Mar  4 17:36 masterha_secondary_check
+-r-xr-xr-x 1 root root  1739 Mar  4 17:36 masterha_stop
+-r-xr-xr-x 1 root root  8261 Mar  4 17:27 purge_relay_logs
+-r-xr-xr-x 1 root root  7525 Mar  4 17:27 save_binary_logs
+
+-- manager
+mkdir -p /etc/masterha
+cp mha4mysql-manager-0.56/samples/conf/app1.cnf /etc/masterha/
+mkdir /data/masterha/app1 -p
+
+# 配置app.conf #
+[root@db004 ~]# vim /etc/masterha/app1.cnf                      
+[server default]
+manager_workdir=/data/masterha/app1
+manager_log=/data/masterha/app1/manager.log
+
+[server1]
+hostname=172.168.101.191
+port=3306
+#candidate_master=1
+
+[server2]
+hostname=172.168.101.195
+port=3306
+candidate_master=1
+check_repl_delay=0
+
+[server3]
+hostname=172.168.101.193
+port=3306
+no_master=1
+
+# 检查ssh #
+[root@db004 ~]# masterha_check_ssh --conf=/etc/masterha/app1.cnf 
+Sat Mar  4 18:09:40 2017 - [warning] Global configuration file /etc/masterha_default.cnf not found. Skipping.
+Sat Mar  4 18:09:40 2017 - [info] Reading application default configuration from /etc/masterha/app1.cnf..
+Sat Mar  4 18:09:40 2017 - [info] Reading server configuration from /etc/masterha/app1.cnf..
+Sat Mar  4 18:09:40 2017 - [info] Starting SSH connection tests..
+Sat Mar  4 18:09:42 2017 - [debug] 
+Sat Mar  4 18:09:40 2017 - [debug]  Connecting via SSH from root@172.168.101.191(172.168.101.191:22) to root@172.168.101.195(172.168.101.195:22)..
+Sat Mar  4 18:09:42 2017 - [debug]   ok.
+Sat Mar  4 18:09:42 2017 - [debug]  Connecting via SSH from root@172.168.101.191(172.168.101.191:22) to root@172.168.101.193(172.168.101.193:22)..
+Sat Mar  4 18:09:42 2017 - [debug]   ok.
+Sat Mar  4 18:09:42 2017 - [debug] 
+Sat Mar  4 18:09:41 2017 - [debug]  Connecting via SSH from root@172.168.101.193(172.168.101.193:22) to root@172.168.101.191(172.168.101.191:22)..
+Sat Mar  4 18:09:42 2017 - [debug]   ok.
+Sat Mar  4 18:09:42 2017 - [debug]  Connecting via SSH from root@172.168.101.193(172.168.101.193:22) to root@172.168.101.195(172.168.101.195:22)..
+Sat Mar  4 18:09:42 2017 - [debug]   ok.
+Sat Mar  4 18:09:48 2017 - [debug] 
+Sat Mar  4 18:09:40 2017 - [debug]  Connecting via SSH from root@172.168.101.195(172.168.101.195:22) to root@172.168.101.191(172.168.101.191:22)..
+Sat Mar  4 18:09:47 2017 - [debug]   ok.
+Sat Mar  4 18:09:47 2017 - [debug]  Connecting via SSH from root@172.168.101.195(172.168.101.195:22) to root@172.168.101.193(172.168.101.193:22)..
+Sat Mar  4 18:09:47 2017 - [debug]   ok.
+Sat Mar  4 18:09:48 2017 - [info] All SSH connection tests passed successfully.
+
+# 检查replication #
+
+[root@db004 ~]# masterha_check_repl --conf=/etc/masterha/app1.cnf 
+Mon Mar  6 09:50:23 2017 - [warning] Global configuration file /etc/masterha_default.cnf not found. Skipping.
+Mon Mar  6 09:50:23 2017 - [info] Reading application default configuration from /etc/masterha/app1.cnf..
+Mon Mar  6 09:50:23 2017 - [info] Reading server configuration from /etc/masterha/app1.cnf..
+Mon Mar  6 09:50:23 2017 - [info] MHA::MasterMonitor version 0.56.
+Mon Mar  6 09:50:25 2017 - [info] GTID failover mode = 0
+Mon Mar  6 09:50:25 2017 - [info] Dead Servers:
+Mon Mar  6 09:50:25 2017 - [info] Alive Servers:
+Mon Mar  6 09:50:25 2017 - [info]   172.168.101.191(172.168.101.191:3306)
+Mon Mar  6 09:50:25 2017 - [info]   172.168.101.195(172.168.101.195:3306)
+Mon Mar  6 09:50:25 2017 - [info]   172.168.101.193(172.168.101.193:3306)
+Mon Mar  6 09:50:25 2017 - [info] Alive Slaves:
+Mon Mar  6 09:50:25 2017 - [info]   172.168.101.195(172.168.101.195:3306)  Version=5.6.35-80.0-log (oldest major version between slaves) log-bin:enabled
+Mon Mar  6 09:50:25 2017 - [info]     Replicating from 172.168.101.191(172.168.101.191:3306)
+Mon Mar  6 09:50:25 2017 - [info]     Primary candidate for the new Master (candidate_master is set)
+Mon Mar  6 09:50:25 2017 - [info]   172.168.101.193(172.168.101.193:3306)  Version=5.6.35-80.0-log (oldest major version between slaves) log-bin:enabled
+Mon Mar  6 09:50:25 2017 - [info]     Replicating from 172.168.101.191(172.168.101.191:3306)
+Mon Mar  6 09:50:25 2017 - [info]     Not candidate for the new Master (no_master is set)
+Mon Mar  6 09:50:25 2017 - [info] Current Alive Master: 172.168.101.191(172.168.101.191:3306)
+Mon Mar  6 09:50:25 2017 - [info] Checking slave configurations..
+Mon Mar  6 09:50:25 2017 - [info]  read_only=1 is not set on slave 172.168.101.195(172.168.101.195:3306).
+Mon Mar  6 09:50:25 2017 - [warning]  relay_log_purge=0 is not set on slave 172.168.101.195(172.168.101.195:3306).
+Mon Mar  6 09:50:25 2017 - [info]  read_only=1 is not set on slave 172.168.101.193(172.168.101.193:3306).
+Mon Mar  6 09:50:25 2017 - [warning]  relay_log_purge=0 is not set on slave 172.168.101.193(172.168.101.193:3306).
+Mon Mar  6 09:50:25 2017 - [info] Checking replication filtering settings..
+Mon Mar  6 09:50:25 2017 - [info]  binlog_do_db= , binlog_ignore_db= 
+Mon Mar  6 09:50:25 2017 - [info]  Replication filtering check ok.
+Mon Mar  6 09:50:25 2017 - [info] GTID (with auto-pos) is not supported
+Mon Mar  6 09:50:25 2017 - [info] Starting SSH connection tests..
+Mon Mar  6 09:50:26 2017 - [info] All SSH connection tests passed successfully.
+Mon Mar  6 09:50:26 2017 - [info] Checking MHA Node version..
+Mon Mar  6 09:50:26 2017 - [info]  Version check ok.
+Mon Mar  6 09:50:26 2017 - [info] Checking SSH publickey authentication settings on the current master..
+Mon Mar  6 09:50:27 2017 - [info] HealthCheck: SSH to 172.168.101.191 is reachable.
+Mon Mar  6 09:50:27 2017 - [info] Master MHA Node version is 0.56.
+Mon Mar  6 09:50:27 2017 - [info] Checking recovery script configurations on 172.168.101.191(172.168.101.191:3306)..
+Mon Mar  6 09:50:27 2017 - [info]   Executing command: save_binary_logs --command=test --start_pos=4 --binlog_dir=/data/mysqlbinlog --output_file=/var/tmp/save_binary_logs_test --manager_version=0.56 --start_file=mysql_bin.000008 
+Mon Mar  6 09:50:27 2017 - [info]   Connecting to root@172.168.101.191(172.168.101.191:22).. 
+  Creating /var/tmp if not exists..    ok.
+  Checking output directory is accessible or not..
+   ok.
+  Binlog found at /data/mysqlbinlog, up to mysql_bin.000008
+Mon Mar  6 09:50:27 2017 - [info] Binlog setting check done.
+Mon Mar  6 09:50:27 2017 - [info] Checking SSH publickey authentication and checking recovery script configurations on all alive slave servers..
+Mon Mar  6 09:50:27 2017 - [info]   Executing command : apply_diff_relay_logs --command=test --slave_user='mha_monitor' --slave_host=172.168.101.195 --slave_ip=172.168.101.195 --slave_port=3306 --workdir=/var/tmp --target_version=5.6.35-80.0-log --manager_version=0.56 --relay_log_info=/data/ane56/relay-log.info  --relay_dir=/data/ane56/  --slave_pass=xxx
+Mon Mar  6 09:50:27 2017 - [info]   Connecting to root@172.168.101.195(172.168.101.195:22).. 
+  Checking slave recovery environment settings..
+    Opening /data/ane56/relay-log.info ... ok.
+    Relay log found at /data/ane56, up to mysql-relay-bin.000012
+    Temporary relay log file is /data/ane56/mysql-relay-bin.000012
+    Testing mysql connection and privileges..Warning: Using a password on the command line interface can be insecure.
+ done.
+    Testing mysqlbinlog output.. done.
+    Cleaning up test file(s).. done.
+Mon Mar  6 09:50:27 2017 - [info]   Executing command : apply_diff_relay_logs --command=test --slave_user='mha_monitor' --slave_host=172.168.101.193 --slave_ip=172.168.101.193 --slave_port=3306 --workdir=/var/tmp --target_version=5.6.35-80.0-log --manager_version=0.56 --relay_log_info=/data/ane56/relay-log.info  --relay_dir=/data/ane56/  --slave_pass=xxx
+Mon Mar  6 09:50:27 2017 - [info]   Connecting to root@172.168.101.193(172.168.101.193:22).. 
+  Checking slave recovery environment settings..
+    Opening /data/ane56/relay-log.info ... ok.
+    Relay log found at /data/ane56, up to mysql-relay-bin.000012
+    Temporary relay log file is /data/ane56/mysql-relay-bin.000012
+    Testing mysql connection and privileges..Warning: Using a password on the command line interface can be insecure.
+ done.
+    Testing mysqlbinlog output.. done.
+    Cleaning up test file(s).. done.
+Mon Mar  6 09:50:28 2017 - [info] Slaves settings check done.
+Mon Mar  6 09:50:28 2017 - [info] 
+172.168.101.191(172.168.101.191:3306) (current master)
+ +--172.168.101.195(172.168.101.195:3306)
+ +--172.168.101.193(172.168.101.193:3306)
+
+Mon Mar  6 09:50:28 2017 - [info] Checking replication health on 172.168.101.195..
+Mon Mar  6 09:50:28 2017 - [info]  ok.
+Mon Mar  6 09:50:28 2017 - [info] Checking replication health on 172.168.101.193..
+Mon Mar  6 09:50:28 2017 - [info]  ok.
+Mon Mar  6 09:50:28 2017 - [warning] master_ip_failover_script is not defined.
+Mon Mar  6 09:50:28 2017 - [warning] shutdown_script is not defined.
+Mon Mar  6 09:50:28 2017 - [info] Got exit code 0 (Not master dead).
+
+MySQL Replication Health is OK.
+
+# 启动MHA MANAGER #
+masterha_manager --conf=/etc/masterha/app1.cnf &
+# 检查状态 #
+[root@db004 ~]# masterha_check_status --conf=/etc/masterha/app1.cnf     
+app1 (pid:26406) is running(0:PING_OK), master:172.168.101.191
+
+
+===========================================================================================
+# mysql-sniffer mysql抓包工具#
+yum install epel-release -y
+yum install -y cmake glib2-devel libpcap-devel libnet-devel 
+git clone https://github.com/Qihoo360/mysql-sniffer.git
+cd mysql-sniffer
+mkdir proj
+cd proj
+cmake ../
+make
