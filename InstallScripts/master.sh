@@ -5,7 +5,7 @@ USERADD='/usr/sbin/useradd'
 ROOT='/rootuser'
 FTPUSER='ftpuser'
 FTPPASSWORD='ftpuser'
-FTPADDR='172.16.4.197'
+FTPADDR='172.0.0.1'
 FTPDIR='Component-warehouse'
 
 MYSQLGROUP='mysql'
