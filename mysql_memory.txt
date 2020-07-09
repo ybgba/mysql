@@ -1,0 +1,27 @@
+--查看每个线程占用多少内存，然后乘以正在运行的线程（也就是排查sleep的）。
+SELECT ( ( @@read_buffer_size
++ @@read_rnd_buffer_size
++ @@sort_buffer_size
++ @@join_buffer_size
++ @@binlog_cache_size
++ @@thread_stack
++ @@max_allowed_packet
++ @@net_buffer_length )
+) / (1024*1024) AS MEMORY_MB;
+
+--查看MySQL全局占用多少内存
+select (@@innodb_buffer_pool_size
++@@innodb_log_buffer_size
++@@key_buffer_size) / 1024 /1024 AS MEMORY_MB;
+
+--查看performance_schema占用多少内存
+SELECT SUBSTRING_INDEX(event_name,'/',2) AS
+       code_area, sys.format_bytes(SUM(current_alloc))
+       AS current_alloc
+       FROM sys.x$memory_global_by_current_bytes
+       GROUP BY SUBSTRING_INDEX(event_name,'/',2)
+       ORDER BY SUM(current_alloc) DESC;
+
+--查看 memory 存储引擎占用多少内存
+select sum(max_data_length)/1024/1024 as MEMORY_MB from tables where engine='memory';
+　　再把上面的结果相加，就是MySQL当前占用的内存大小
