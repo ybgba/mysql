@@ -25,4 +25,6 @@ SELECT SUBSTRING_INDEX(event_name,'/',2) AS
 --查看 memory 存储引擎占用多少内存
 select sum(max_data_length)/1024/1024 as MEMORY_MB from tables where engine='memory';
 　　再把上面的结果相加，就是MySQL当前占用的内存大小
+  
 http://www.mysqlcalculator.com/
+https://help.aliyun.com/knowledge_detail/51799.html
